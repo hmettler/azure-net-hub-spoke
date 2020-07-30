@@ -1,8 +1,10 @@
+# You might want to use multiple regional RGs in a real world deployment. This is not considered yet in the code.
 rg = "rg-hpm-03"
 
-# Local is a replacement for an onprem network and is used for VPN gateway and workplace subnets
-# Hub is used for VPN gateway, firewall and mgmt and services subnets (currently one svc subnet is created only)
-# DMZ is used for DMZ subnets (currently an internal and external subnet is created to host dual-homed GWs)
+# Local is a replacement for an onprem network and is used for the VPN gateway and workplace subnets
+# Hub is used for the VPN gateway, firewall and mgmt and services subnets (currently one svc subnet is created only)
+# DMZ is used for the DMZ subnets (currently an internal and external subnet is created to host dual-homed GWs)
+
 vnets = {
           vnet-local-euw        = {location = "West Europe", address_space = ["10.0.0.0/16"]},
 
