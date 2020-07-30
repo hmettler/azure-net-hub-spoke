@@ -1,5 +1,8 @@
 rg = "rg-hpm-03"
 
+# Local is a replacement for an onprem network and is used for VPN gateway and workplace subnets
+# Hub is used for VPN gateway, firewall and mgmt and services subnets (currently one svc subnet is created only)
+# DMZ is used for DMZ subnets (currently an internal and external subnet is created to host dual-homed GWs)
 vnets = {
           vnet-local-euw        = {location = "West Europe", address_space = ["10.0.0.0/16"]},
 
@@ -34,7 +37,7 @@ subnets = {
 
             snet-az-eun-hub-gateway   = {name = "GatewaySubnet", link_vnet = "vnet-az-eun-hub", address_prefix = "10.101.0.0/24"},
             snet-az-eun-hub-firewall  = {name = "AzureFirewallSubnet", link_vnet = "vnet-az-eun-hub", address_prefix = "10.101.1.0/24"},
-            snet-az-eun-hub-svc1       = {name = "snet-az-eun-hub-svc1", link_vnet = "vnet-az-eun-hub", address_prefix = "10.101.2.0/24"},
+            snet-az-eun-hub-svc1      = {name = "snet-az-eun-hub-svc1", link_vnet = "vnet-az-eun-hub", address_prefix = "10.101.2.0/24"},
             snet-az-eun-prod-dmz1     = {name = "snet-az-eun-prod-dmz1", link_vnet = "vnet-az-eun-prod-dmz", address_prefix = "10.101.8.0/24"},
             snet-az-eun-prod-dmz2     = {name = "snet-az-eun-prod-dmz2", link_vnet = "vnet-az-eun-prod-dmz", address_prefix = "10.101.9.0/24"},
             snet-az-eun-prod-app1     = {name = "snet-az-eun-prod-app1", link_vnet = "vnet-az-eun-prod-app", address_prefix = "10.101.16.0/24"},
@@ -192,27 +195,37 @@ fw_app_rule_colls = {
 nsgs  = {
           nsg-snet-az-euw-prod-dmz1  = {location = "West Europe", link_subnets = ["snet-az-euw-prod-dmz1"],
             security_rules = {
-              ssh-in  = {description = "Allows ssh to subnet", priority = 100, direction = "Inbound", access = "Allow", source_address_prefix = "10.0.0.0/8", destination_address_prefix = "VirtualNetwork", protocol = "Tcp", source_port_range = "*", source_port_ranges = null, destination_port_range = null, destination_port_ranges = ["22"]},
-              all-out = {description = "Allows everything out of subnet", priority = 100, direction = "Outbound", access = "Allow", source_address_prefix = "VirtualNetwork", destination_address_prefix = "*", protocol = "*", source_port_range = "*", source_port_ranges = null, destination_port_range = "*", destination_port_ranges = null}
+              allow-ssh-in  = {description = "Allows ssh to subnet", priority = 100, direction = "Inbound", access = "Allow", source_address_prefix = "10.0.0.0/8", destination_address_prefix = "*", protocol = "Tcp", source_port_range = "*", source_port_ranges = null, destination_port_range = null, destination_port_ranges = ["22"]},
+              allow-lb-in   = {description = "Allows LB to subnet", priority = 4080, direction = "Inbound", access = "Allow", source_address_prefix = "AzureLoadBalancer", destination_address_prefix = "*", protocol = "*", source_port_range = "*", source_port_ranges = null, destination_port_range = "*", destination_port_ranges = null},
+              deny-all-in   = {description = "Deny all to subnet", priority = 4090, direction = "Inbound", access = "Deny", source_address_prefix = "*", destination_address_prefix = "*", protocol = "*", source_port_range = "*", source_port_ranges = null, destination_port_range = "*", destination_port_ranges = null},
+              allow-ssh-out = {description = "Allows ssh out of subnet", priority = 100, direction = "Outbound", access = "Allow", source_address_prefix = "*", destination_address_prefix = "10.0.0.0/8", protocol = "Tcp", source_port_range = "*", source_port_ranges = null, destination_port_range = null, destination_port_ranges = ["22"]}
+              deny-all-out  = {description = "Deny all out of subnet", priority = 4090, direction = "Outbound", access = "Deny", source_address_prefix = "*", destination_address_prefix = "*", protocol = "*", source_port_range = "*", source_port_ranges = null, destination_port_range = "*", destination_port_ranges = null}
             }
           },
           nsg-snet-az-euw-prod-dmz2  = {location = "West Europe", link_subnets = ["snet-az-euw-prod-dmz2"],
             security_rules = {
-              ssh-in  = {description = "Allows ssh to subnet", priority = 100, direction = "Inbound", access = "Allow", source_address_prefix = "*", destination_address_prefix = "VirtualNetwork", protocol = "Tcp", source_port_range = "*", source_port_ranges = null, destination_port_range = null, destination_port_ranges = ["22"]},
-#              all-out = {description = "Allows everything out of subnet", priority = 100, direction = "Outbound", access = "Allow", source_address_prefix = "VirtualNetwork", destination_address_prefix = "*", protocol = "*", source_port_range = "*", source_port_ranges = null, destination_port_range = "*", destination_port_ranges = null}
+              allow-ssh-in  = {description = "Allows ssh to subnet", priority = 100, direction = "Inbound", access = "Allow", source_address_prefix = "*", destination_address_prefix = "*", protocol = "Tcp", source_port_range = "*", source_port_ranges = null, destination_port_range = null, destination_port_ranges = ["22"]},
+              allow-lb-in   = {description = "Allows LB to subnet", priority = 4080, direction = "Inbound", access = "Allow", source_address_prefix = "AzureLoadBalancer", destination_address_prefix = "*", protocol = "*", source_port_range = "*", source_port_ranges = null, destination_port_range = "*", destination_port_ranges = null},
+              deny-all-in   = {description = "Deny all to subnet", priority = 4090, direction = "Inbound", access = "Deny", source_address_prefix = "*", destination_address_prefix = "*", protocol = "*", source_port_range = "*", source_port_ranges = null, destination_port_range = "*", destination_port_ranges = null},
+              deny-all-out  = {description = "Deny all out of subnet", priority = 4090, direction = "Outbound", access = "Deny", source_address_prefix = "*", destination_address_prefix = "*", protocol = "*", source_port_range = "*", source_port_ranges = null, destination_port_range = "*", destination_port_ranges = null}
             }
           },
 
           nsg-snet-az-eun-prod-dmz1  = {location = "North Europe", link_subnets = ["snet-az-eun-prod-dmz1"],
             security_rules = {
-              ssh-in  = {description = "Allows ssh to subnet", priority = 100, direction = "Inbound", access = "Allow", source_address_prefix = "10.0.0.0/8", destination_address_prefix = "VirtualNetwork", protocol = "Tcp", source_port_range = "*", source_port_ranges = null, destination_port_range = null, destination_port_ranges = ["22"]},
-#              all-out = {description = "Allows everything out of subnet", priority = 100, direction = "Outbound", access = "Allow", source_address_prefix = "VirtualNetwork", destination_address_prefix = "*", protocol = "*", source_port_range = "*", source_port_ranges = null, destination_port_range = "*", destination_port_ranges = null}
+              allow-ssh-in  = {description = "Allows ssh to subnet", priority = 100, direction = "Inbound", access = "Allow", source_address_prefix = "10.0.0.0/8", destination_address_prefix = "*", protocol = "Tcp", source_port_range = "*", source_port_ranges = null, destination_port_range = null, destination_port_ranges = ["22"]},
+              allow-lb-in   = {description = "Allows LB to subnet", priority = 4080, direction = "Inbound", access = "Allow", source_address_prefix = "AzureLoadBalancer", destination_address_prefix = "*", protocol = "*", source_port_range = "*", source_port_ranges = null, destination_port_range = "*", destination_port_ranges = null},
+              deny-all-in   = {description = "Deny all to subnet", priority = 4090, direction = "Inbound", access = "Deny", source_address_prefix = "*", destination_address_prefix = "*", protocol = "*", source_port_range = "*", source_port_ranges = null, destination_port_range = "*", destination_port_ranges = null},
+              allow-ssh-out = {description = "Allows ssh out of subnet", priority = 100, direction = "Outbound", access = "Allow", source_address_prefix = "*", destination_address_prefix = "10.0.0.0/8", protocol = "Tcp", source_port_range = "*", source_port_ranges = null, destination_port_range = null, destination_port_ranges = ["22"]}
+              deny-all-out  = {description = "Deny all out of subnet", priority = 4090, direction = "Outbound", access = "Deny", source_address_prefix = "*", destination_address_prefix = "*", protocol = "*", source_port_range = "*", source_port_ranges = null, destination_port_range = "*", destination_port_ranges = null}
             }
           },
           nsg-snet-az-eun-prod-dmz2  = {location = "North Europe", link_subnets = ["snet-az-eun-prod-dmz2"],
             security_rules = {
-              ssh-in  = {description = "Allows ssh to subnet", priority = 100, direction = "Inbound", access = "Allow", source_address_prefix = "*", destination_address_prefix = "VirtualNetwork", protocol = "Tcp", source_port_range = "*", source_port_ranges = null, destination_port_range = null, destination_port_ranges = ["22"]},
-#              all-out = {description = "Allows everything out of subnet", priority = 100, direction = "Outbound", access = "Allow", source_address_prefix = "VirtualNetwork", destination_address_prefix = "*", protocol = "*", source_port_range = "*", source_port_ranges = null, destination_port_range = "*", destination_port_ranges = null}
+              allow-ssh-in  = {description = "Allows ssh to subnet", priority = 100, direction = "Inbound", access = "Allow", source_address_prefix = "*", destination_address_prefix = "*", protocol = "Tcp", source_port_range = "*", source_port_ranges = null, destination_port_range = null, destination_port_ranges = ["22"]},
+              allow-lb-in   = {description = "Allows LB to subnet", priority = 4080, direction = "Inbound", access = "Allow", source_address_prefix = "AzureLoadBalancer", destination_address_prefix = "*", protocol = "*", source_port_range = "*", source_port_ranges = null, destination_port_range = "*", destination_port_ranges = null},
+              deny-all-in   = {description = "Deny all to subnet", priority = 4090, direction = "Inbound", access = "Deny", source_address_prefix = "*", destination_address_prefix = "*", protocol = "*", source_port_range = "*", source_port_ranges = null, destination_port_range = "*", destination_port_ranges = null},
+              deny-all-out  = {description = "Deny all out of subnet", priority = 4090, direction = "Outbound", access = "Deny", source_address_prefix = "*", destination_address_prefix = "*", protocol = "*", source_port_range = "*", source_port_ranges = null, destination_port_range = "*", destination_port_ranges = null}
             }
           },
 }
